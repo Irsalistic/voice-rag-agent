@@ -5,7 +5,9 @@ import threading
 from collections.abc import Callable, Iterator
 
 
-async def iterate_in_thread(factory: Callable[[], Iterator], should_stop: Callable[[], bool] | None = None):
+async def iterate_in_thread(
+    factory: Callable[[], Iterator], should_stop: Callable[[], bool] | None = None
+):
     loop = asyncio.get_running_loop()
     queue: asyncio.Queue = asyncio.Queue()
 
