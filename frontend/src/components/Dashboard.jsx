@@ -64,7 +64,7 @@ export function Dashboard() {
         <section>
           <h3>Latency by stage</h3>
           {overview.latency.length === 0 && <p className="muted">No turns yet. Ask a question and come back.</p>}
-          <div className="bars">
+          <div className="latency-bars">
             {overview.latency.map((row) => (
               <div className="bar-row" key={row.stage}>
                 <span>{STAGES[row.stage] || row.stage}</span>
