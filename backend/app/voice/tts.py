@@ -74,7 +74,9 @@ class OpenAITTS(TTSProvider):
                 json=payload,
             )
         if response.status_code >= 400:
-            raise RuntimeError(f"text to speech failed: {response.status_code} {response.text[:200]}")
+            raise RuntimeError(
+                f"text to speech failed: {response.status_code} {response.text[:200]}"
+            )
         return response.content
 
 

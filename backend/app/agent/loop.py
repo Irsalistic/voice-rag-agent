@@ -100,7 +100,8 @@ class Agent:
                     messages.append(
                         {
                             "role": "user",
-                            "content": "Tool result:\n" + json.dumps(model_payload(call.name, output)),
+                            "content": "Tool result:\n"
+                            + json.dumps(model_payload(call.name, output)),
                         }
                     )
                     yield {"type": "tool", **bag["tools"][-1]}

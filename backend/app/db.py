@@ -4,13 +4,13 @@ import json
 import sqlite3
 import threading
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 
 def utcnow() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    return datetime.now(UTC).replace(microsecond=0).isoformat()
 
 
 def _load_json(raw: str | None, fallback: Any) -> Any:
@@ -152,7 +152,10 @@ class Database:
 
     def set_meta(self, key: str, value: str) -> None:
         self.execute(
-            "INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            """
+            INSERT INTO meta (key, value) VALUES (?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+            """,
             (key, value),
         )
 
@@ -172,13 +175,19 @@ class Database:
             "appointments": "appointments",
             "orders": "orders",
         }
-        return {name: int(self.query_one(f"SELECT COUNT(*) AS n FROM {table}")["n"]) for name, table in tables.items()}
+        return {
+            name: int(self.query_one(f"SELECT COUNT(*) AS n FROM {table}")["n"])
+            for name, table in tables.items()
+        }
 
     def create_session(self, title: str = "New conversation") -> dict:
         session_id = uuid.uuid4().hex[:16]
         now = utcnow()
         self.execute(
-            "INSERT INTO sessions (id, title, meta_json, created_at, updated_at) VALUES (?, ?, '{}', ?, ?)",
+            """
+            INSERT INTO sessions (id, title, meta_json, created_at, updated_at)
+            VALUES (?, ?, '{}', ?, ?)
+            """,
             (session_id, title, now, now),
         )
         session = self.get_session(session_id)
@@ -314,7 +323,9 @@ class Database:
     ) -> None:
         self.execute(
             """
-            INSERT INTO documents (id, filename, content_type, byte_size, chunk_count, stored_name, created_at)
+            INSERT INTO documents (
+                id, filename, content_type, byte_size, chunk_count, stored_name, created_at
+            )
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (document_id, filename, content_type, byte_size, chunk_count, stored_name, utcnow()),
@@ -399,7 +410,9 @@ class Database:
             raw = raw[:20000]
         self.execute(
             """
-            INSERT INTO tool_calls (session_id, name, arguments_json, result_json, summary, latency_ms, created_at)
+            INSERT INTO tool_calls (
+                session_id, name, arguments_json, result_json, summary, latency_ms, created_at
+            )
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (session_id, name, json.dumps(arguments), raw, summary[:300], latency_ms, utcnow()),
@@ -422,9 +435,14 @@ class Database:
             items.append(item)
         return items
 
-    def add_trace(self, session_id: str | None, stage: str, latency_ms: int, detail: str = "") -> None:
+    def add_trace(
+        self, session_id: str | None, stage: str, latency_ms: int, detail: str = ""
+    ) -> None:
         self.execute(
-            "INSERT INTO traces (session_id, stage, latency_ms, detail, created_at) VALUES (?, ?, ?, ?, ?)",
+            """
+            INSERT INTO traces (session_id, stage, latency_ms, detail, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
             (session_id, stage, latency_ms, detail[:300], utcnow()),
         )
 
@@ -451,7 +469,9 @@ class Database:
         summary.sort(key=lambda item: item["stage"])
         return summary
 
-    def add_appointment(self, name: str, email: str, day: str, time_of_day: str, reason: str) -> int:
+    def add_appointment(
+        self, name: str, email: str, day: str, time_of_day: str, reason: str
+    ) -> int:
         cursor = self.execute(
             """
             INSERT INTO appointments (name, email, date, time, reason, status, created_at)
@@ -482,7 +502,10 @@ class Database:
         self.execute(
             """
             INSERT OR IGNORE INTO orders
-                (id, email, customer_name, status, total_cents, items_json, carrier, tracking, updated_at)
+                (
+                    id, email, customer_name, status, total_cents,
+                    items_json, carrier, tracking, updated_at
+                )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (

@@ -37,7 +37,9 @@ def clamp_pieces(sentences: list[str], limit: int = 400) -> list[str]:
     return pieces
 
 
-async def speak_sentences(sentences, tts, cancel, send_audio: Callable[[bytes], Awaitable[None]]) -> str:
+async def speak_sentences(
+    sentences, tts, cancel, send_audio: Callable[[bytes], Awaitable[None]]
+) -> str:
     for sentence in clamp_pieces(sentences):
         if cancel.is_set():
             return "interrupted"

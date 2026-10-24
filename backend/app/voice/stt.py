@@ -43,7 +43,9 @@ class OpenAISTT(STTProvider):
                 data=data,
             )
         if response.status_code >= 400:
-            raise RuntimeError(f"speech to text failed: {response.status_code} {response.text[:200]}")
+            raise RuntimeError(
+                f"speech to text failed: {response.status_code} {response.text[:200]}"
+            )
         return str(response.json().get("text") or "").strip()
 
 
@@ -96,7 +98,9 @@ def build_stt(settings: Settings) -> STTProvider:
         if choice != "none":
             log.warning("Unknown speech-to-text provider %s. Using the browser instead.", choice)
     except Exception as exc:
-        log.warning("Speech-to-text provider %s failed (%s). Using the browser instead.", choice, exc)
+        log.warning(
+            "Speech-to-text provider %s failed (%s). Using the browser instead.", choice, exc
+        )
     return STTProvider()
 
 
