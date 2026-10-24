@@ -1,0 +1,26 @@
+[
+  {
+    "question": "How many days do I have to return an item?",
+    "expect_source": "refund-policy.md"
+  },
+  {
+    "question": "What does expedited shipping cost?",
+    "expect_source": "shipping-policy.md"
+  },
+  {
+    "question": "What is the Oakline sofa made of?",
+    "expect_source": "product-faq.md"
+  },
+  {
+    "question": "What time does Saturday support close?",
+    "expect_source": "support-hours.md"
+  },
+  {
+    "question": "Are opened candles refundable?",
+    "expect_source": "refund-policy.md"
+  },
+  {
+    "question": "How do I wipe the lamp shade?",
+    "expect_source": "product-faq.md"
+  }
+]
