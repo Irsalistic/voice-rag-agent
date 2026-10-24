@@ -4,6 +4,8 @@ import hashlib
 import importlib.util
 import logging
 import math
+import os
+from pathlib import Path
 
 import httpx
 
@@ -101,7 +103,9 @@ class OpenAIEmbedder(Embedder):
             timeout=self._timeout,
         )
         if response.status_code >= 400:
-            raise RuntimeError(f"openai embeddings failed: {response.status_code} {response.text[:200]}")
+            raise RuntimeError(
+                f"openai embeddings failed: {response.status_code} {response.text[:200]}"
+            )
         data = response.json()["data"]
         data.sort(key=lambda item: item["index"])
         return [item["embedding"] for item in data]
@@ -128,8 +132,9 @@ def build_embedder(settings: Settings) -> Embedder:
         if choice == "hashing":
             return HashingEmbedder()
         if choice == "fastembed":
-            settings.model_cache_path.mkdir(parents=True, exist_ok=True)
-            return FastEmbedder(settings.embedding_model, str(settings.model_cache_path))
+            cache_dir = os.environ.get("FASTEMBED_CACHE_PATH") or str(settings.model_cache_path)
+            Path(cache_dir).mkdir(parents=True, exist_ok=True)
+            return FastEmbedder(settings.embedding_model, cache_dir)
         if choice == "openai":
             if not settings.openai_api_key.strip():
                 raise RuntimeError("OPENAI_API_KEY is required for openai embeddings")
