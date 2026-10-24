@@ -113,29 +113,35 @@ class IntentRouter:
         self.db = db
 
     def should_force_search(self, text: str, session_id: str) -> bool:
-        pending = self.db.session_meta(session_id).get("pending_appointment")
-        if pending or is_greeting(text) or is_booking(text) or is_order(text):
+        if (
+            self._pending(session_id) is not None
+            or is_greeting(text)
+            or is_booking(text)
+            or is_order(text)
+        ):
             return False
         return len(content_tokens(text)) >= 2
 
     def plan(self, session_id: str, text: str) -> tuple[list[ToolCall], str | None]:
-        pending = self.db.session_meta(session_id).get("pending_appointment") or {}
-        if not isinstance(pending, dict):
-            pending = {}
-        if pending and not is_booking(text):
+        pending = self._pending(session_id)
+        in_booking = pending is not None
+        if in_booking and not is_booking(text):
             parsed = parse_appointment(text)
             if not any(parsed.values()) and ("?" in text or is_order(text) or is_greeting(text)):
                 self.db.update_session_meta(session_id, {"pending_appointment": None})
-                pending = {}
-        if pending or is_booking(text):
-            return self._plan_booking(session_id, text, pending)
+                pending = None
+                in_booking = False
+        if in_booking or is_booking(text):
+            return self._plan_booking(session_id, text, pending or {})
         if is_order(text):
             return self._plan_order(text)
         if is_greeting(text):
             return [], GREETING
         return [ToolCall.create("search_knowledge_base", {"query": text})], None
 
-    def _plan_booking(self, session_id: str, text: str, pending: dict) -> tuple[list[ToolCall], str | None]:
+    def _plan_booking(
+        self, session_id: str, text: str, pending: dict
+    ) -> tuple[list[ToolCall], str | None]:
         fields = {key: value for key, value in pending.items() if value}
         for key, value in parse_appointment(text).items():
             if value:
@@ -154,6 +160,12 @@ class IntentRouter:
             return [], "Share an order id like ORD-1001, or the email on the order."
         return [ToolCall.create("lookup_order", arguments)], None
 
+    def _pending(self, session_id: str) -> dict | None:
+        raw = self.db.session_meta(session_id).get("pending_appointment")
+        if isinstance(raw, dict):
+            return raw
+        return None
+
 
 def _parse_email(text: str) -> str | None:
     match = EMAIL_RE.search(text)
@@ -163,7 +175,8 @@ def _parse_email(text: str) -> str | None:
 def _parse_name(text: str) -> str | None:
     patterns = [
         re.compile(
-            r"\b(?:my name is|name is|i am|i'm)\s+([A-Za-z][A-Za-z.'-]+(?:\s+[A-Za-z][A-Za-z.'-]+){0,3})",
+            r"\b(?:my name is|name is|i am|i'm)\s+"
+            r"([A-Za-z][A-Za-z.'-]+(?:\s+[A-Za-z][A-Za-z.'-]+){0,3})",
             re.IGNORECASE,
         ),
         re.compile(r"\bfor\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3})"),
